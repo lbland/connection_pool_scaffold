@@ -2,38 +2,28 @@ package com.opower.connectionpool;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.DriverManager;
+import javax.sql.DataSource;
 
 public class ConnectionWrapperImplementation implements ConnectionWrapper {
 
-	// private members
-	private String url;
-	private String user;
-	private String password;
+	// private members	
+	private DataSource dataSource;
 
-	/**
-	 * 
-	 * @param url
-	 * @param user
-	 * @param password
-	 */
 	
-	public ConnectionWrapperImplementation(String url, String user, String password) {
-		this.url = url;
-		this.user = user;
-		this.password = password;
+	public ConnectionWrapperImplementation(DataSource datasource) {
+		this.dataSource = datasource;
 	}
 
 	/**
-	 * Gets a connection to the url.
+	 * Gets a connection from the data source
 	 * <p>
 	 * 
 	 * 
-	 * @return a connection to the url.
+	 * @return a connection 
 	 * @throws SQLException
 	 */
 	public Connection getConnection( ) throws SQLException {
-		return DriverManager.getConnection(this.url, this.user, this.password);
+		return this.dataSource.getConnection();	
 	}
 	
 }

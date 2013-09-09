@@ -183,7 +183,7 @@ public class BlockingConnectionPool implements ConnectionPool {
 	 * 
 	 * @return the number of used connections
 	 */
-	public Integer getUsedConnection() {
+	public Integer getUsedConnections() {
 		
 		return this.usedConnections.size();
 	}
