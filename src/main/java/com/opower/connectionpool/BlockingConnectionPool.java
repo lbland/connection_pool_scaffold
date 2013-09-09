@@ -8,7 +8,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 /**
  * This class implements a Blocking Connection Pool.
- * if a request for a conncetion comes in when there are no available connections, the request will block
+ * if a request for a connection comes in when there are no available connections, the request will block
  * until there is a connection available.
  * 
  * @author loren_bland
@@ -21,10 +21,7 @@ public class BlockingConnectionPool implements ConnectionPool {
 	 * Private members
 	 */
 	
-	// url, user and password are the connection properties for the connections in the pool
-	private String url;
-	private String user;
-	private String password;
+	// the connectionwrapper abstracts the type of connection the pool is using.
 	private ConnectionWrapper connectionWrapper;
 
 	// queue of available connections and used connections
@@ -42,20 +39,22 @@ public class BlockingConnectionPool implements ConnectionPool {
 	// the size of the pool
 	private Integer poolSize;
 	
-	public BlockingConnectionPool(Integer size, String url, String user, String password) throws SQLException {
+	/**
+	 *
+	 * 
+	 * @param size The number of connections in the pool
+	 * @param connectionWrapper A wrapper for the connection type of this pool
+	 * @throws SQLException
+	 */
+	public BlockingConnectionPool(Integer size, ConnectionWrapper connectionWrapper) throws SQLException {
 		this.poolSize = size;
-		this.url = url;
-		this.user = user;
-		this.password = password;
-		this.connectionWrapper = new ConnectionWrapperImplementation(url, user, password);
-
+		this.connectionWrapper = connectionWrapper;
 		this.availableConnections = new ArrayList<Connection>( );
 		this.usedConnections = new ArrayList<Connection>( );
-
 		this.arrayListLock = new ReentrantLock();
-
 		this.arrayListSemaphore = new Semaphore(size, true);
 		
+		this.initConnectionPool();
 	}
 	
 	
@@ -67,8 +66,29 @@ public class BlockingConnectionPool implements ConnectionPool {
 	 * @throws SQLException
 	 */
 	@Override
-	public Connection getConnection( ) throws SQLException {
-		return null;
+	public Connection getConnection() throws SQLException {
+		
+		Connection con;
+		try {
+			this.arrayListSemaphore.acquire();
+		}
+		catch(InterruptedException ex) {
+			throw new SQLException(ex);
+		}
+		
+		
+		try {
+			// this will block waiting for a connection
+			this.arrayListLock.lock( );
+			
+			// there should always be at least 1 available connection at this point.
+			con = getAvailableConnectionAndMoveToUsedConnection();
+		}
+		finally {
+			this.arrayListLock.unlock();
+		}
+
+		return con;
 	}
 	
 	
@@ -80,7 +100,94 @@ public class BlockingConnectionPool implements ConnectionPool {
 	@Override
 	public void releaseConnection(Connection connection) throws SQLException {
 
-		
+		if(connection == null) { 
+			throw new SQLException("Cannot release a null connection");
+		}
+
+		try {
+			this.arrayListLock.lock();
+
+			// ensure the connection exists in our usedConnections
+			if(!this.usedConnections.remove(connection)) {
+				throw new SQLException("This connection is not part of this ConnectionPool");
+			}
+
+			this.availableConnections.add(connection);
+
+		}
+		finally {
+			this.arrayListLock.unlock();
+		}
+
+		this.arrayListSemaphore.release();
 	
 	}
+	
+	/**
+	 * Initializes the connection pool with the proper number of connections.
+	 * 
+	 * @throws SQLException
+	 */
+	private void initConnectionPool() throws SQLException {
+
+		for(Integer counter = 0; counter < this.poolSize; ++counter) {
+			this.availableConnections.add(createConnection());
+
+		}
+	}
+
+	/**
+	 * 
+	 * @return a newly created connection
+	 * @throws SQLException
+	 */
+	private Connection createConnection() throws SQLException {
+		return this.connectionWrapper.getConnection();
+	}
+
+	
+	/**
+	 * gets a connection off the available connection array and moves it onto the 
+	 * usedConnection array.
+	 * 
+	 * @return a connection to be used
+	 * @throws SQLException
+	 */
+	private Connection getAvailableConnectionAndMoveToUsedConnection() throws SQLException {
+		// remove the top element and add it to the used connections
+		Connection connection = this.availableConnections.remove(0);
+
+		//if the connection is closed
+		//create a new connection
+		if(connection.isClosed()) {
+			connection = createConnection();
+		}
+
+		this.usedConnections.add(connection);
+
+		return connection;
+	}
+
+	/**
+	 * gets the number of available connections
+	 * 
+	 * @return the number of available connections
+	 */
+	public Integer getAvailableConnections() {
+		return this.availableConnections.size();
+	}
+	
+	
+	/**
+	 * gets the number of used connections
+	 * 
+	 * @return the number of used connections
+	 */
+	public Integer getUsedConnection() {
+		
+		return this.usedConnections.size();
+	}
+
+
+	
 }
