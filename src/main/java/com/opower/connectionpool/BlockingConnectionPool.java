@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import org.apache.log4j.Logger;
 /**
  * This class implements a Blocking Connection Pool.
  * if a request for a connection comes in when there are no available connections, the request will block
@@ -39,14 +40,18 @@ public class BlockingConnectionPool implements ConnectionPool {
 	// the size of the pool
 	private Integer poolSize;
 	
+	// Logger
+	private static Logger logger = Logger.getLogger(BlockingConnectionPool.class);
+	
 	/**
-	 *
+	 * initialize a blocking connection pool.
 	 * 
 	 * @param size The number of connections in the pool
 	 * @param connectionWrapper A wrapper for the connection type of this pool
 	 * @throws SQLException
 	 */
 	public BlockingConnectionPool(Integer size, ConnectionWrapper connectionWrapper) throws SQLException {
+		this.logger.trace("BlockingConstructor Constructor");
 		this.poolSize = size;
 		this.connectionWrapper = connectionWrapper;
 		this.availableConnections = new ArrayList<Connection>( );
@@ -67,12 +72,14 @@ public class BlockingConnectionPool implements ConnectionPool {
 	 */
 	@Override
 	public Connection getConnection() throws SQLException {
+		this.logger.trace("getConnection");
 		
 		Connection con;
 		try {
 			this.arrayListSemaphore.acquire();
 		}
 		catch(InterruptedException ex) {
+			this.logger.error("Exception acquiring the semaphor");
 			throw new SQLException(ex);
 		}
 		
@@ -80,6 +87,11 @@ public class BlockingConnectionPool implements ConnectionPool {
 		try {
 			// this will block waiting for a connection
 			this.arrayListLock.lock( );
+			
+			if(this.availableConnections.size() == 0) {
+				//this should never happen
+				this.logger.fatal("There should always be a connection available here.  A deadlock scenario.");
+			}
 			
 			// there should always be at least 1 available connection at this point.
 			con = getAvailableConnectionAndMoveToUsedConnection();
@@ -100,6 +112,8 @@ public class BlockingConnectionPool implements ConnectionPool {
 	@Override
 	public void releaseConnection(Connection connection) throws SQLException {
 
+		this.logger.trace("releaseConnection");
+		
 		if(connection == null) { 
 			throw new SQLException("Cannot release a null connection");
 		}
@@ -129,7 +143,7 @@ public class BlockingConnectionPool implements ConnectionPool {
 	 * @throws SQLException
 	 */
 	private void initConnectionPool() throws SQLException {
-
+		this.logger.trace("initConnectionPool");
 		for(Integer counter = 0; counter < this.poolSize; ++counter) {
 			this.availableConnections.add(createConnection());
 
@@ -142,6 +156,7 @@ public class BlockingConnectionPool implements ConnectionPool {
 	 * @throws SQLException
 	 */
 	private Connection createConnection() throws SQLException {
+		this.logger.trace("createConnection");
 		return this.connectionWrapper.getConnection();
 	}
 
@@ -154,6 +169,14 @@ public class BlockingConnectionPool implements ConnectionPool {
 	 * @throws SQLException
 	 */
 	private Connection getAvailableConnectionAndMoveToUsedConnection() throws SQLException {
+		
+		this.logger.trace("getAvailableConnectionAndMoveToUsedCOnnection");
+		
+		if(this.availableConnections.size() == 0) {
+			this.logger.fatal("There should always be an available connection here.  throwing exception");
+			throw new SQLException("There are no connections in the available connections array.  this should never happen.");
+		}
+			
 		// remove the top element and add it to the used connections
 		Connection connection = this.availableConnections.remove(0);
 
@@ -174,6 +197,7 @@ public class BlockingConnectionPool implements ConnectionPool {
 	 * @return the number of available connections
 	 */
 	public Integer getAvailableConnections() {
+		this.logger.trace("getAvailableConnections");
 		return this.availableConnections.size();
 	}
 	
@@ -184,7 +208,7 @@ public class BlockingConnectionPool implements ConnectionPool {
 	 * @return the number of used connections
 	 */
 	public Integer getUsedConnections() {
-		
+		this.logger.trace("getAvailableConnections");
 		return this.usedConnections.size();
 	}
 
