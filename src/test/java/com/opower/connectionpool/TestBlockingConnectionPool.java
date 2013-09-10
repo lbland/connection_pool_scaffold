@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.concurrent.TimeUnit;
 
 import static org.easymock.EasyMock.*;
 
@@ -194,6 +195,34 @@ public class TestBlockingConnectionPool {
 		verify(mockConnection);
 		verify(mockConnectionWrapper);
 
+	}
+	
+	
+	@Test
+	public void testTimeOutRequest() throws SQLException {
+
+		setupSuccess(1);
+
+		pool = new BlockingConnectionPool(1, mockConnectionWrapper);
+
+		assertEquals(pool.getAvailableConnections( ), new Integer(1));
+
+		Connection connection = pool.getConnection( );
+		assertEquals(pool.getAvailableConnections( ), new Integer(0));
+
+		try{
+			Connection connection2 = pool.getConnection(1000, TimeUnit.MILLISECONDS);
+		}
+		catch(SQLException ex) {
+			assertEquals(ex.getMessage(),"No connections became available");
+		}
+		
+		assertEquals(pool.getAvailableConnections( ), new Integer(0));
+		
+
+		verify(mockConnection);
+		verify(mockConnectionWrapper);
+		
 	}
 	
 }

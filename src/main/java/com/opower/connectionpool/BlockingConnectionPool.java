@@ -3,6 +3,7 @@ package com.opower.connectionpool;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -74,7 +75,6 @@ public class BlockingConnectionPool implements ConnectionPool {
 	public Connection getConnection() throws SQLException {
 		this.logger.trace("getConnection");
 		
-		Connection con;
 		try {
 			this.arrayListSemaphore.acquire();
 		}
@@ -84,23 +84,9 @@ public class BlockingConnectionPool implements ConnectionPool {
 		}
 		
 		
-		try {
-			// this will block waiting for a connection
-			this.arrayListLock.lock( );
-			
-			if(this.availableConnections.size() == 0) {
-				//this should never happen
-				this.logger.fatal("There should always be a connection available here.  A deadlock scenario.");
-			}
-			
-			// there should always be at least 1 available connection at this point.
-			con = getAvailableConnectionAndMoveToUsedConnection();
-		}
-		finally {
-			this.arrayListLock.unlock();
-		}
-
+		Connection con = getAvailableConnection( );
 		return con;
+
 	}
 	
 	
@@ -168,9 +154,9 @@ public class BlockingConnectionPool implements ConnectionPool {
 	 * @return a connection to be used
 	 * @throws SQLException
 	 */
-	private Connection getAvailableConnectionAndMoveToUsedConnection() throws SQLException {
+	private Connection moveConnectionToUsedArray() throws SQLException {
 		
-		this.logger.trace("getAvailableConnectionAndMoveToUsedCOnnection");
+		this.logger.trace("moveConnectionToUsedArray");
 		
 		if(this.availableConnections.size() == 0) {
 			this.logger.fatal("There should always be an available connection here.  throwing exception");
@@ -210,6 +196,61 @@ public class BlockingConnectionPool implements ConnectionPool {
 	public Integer getUsedConnections() {
 		this.logger.trace("getAvailableConnections");
 		return this.usedConnections.size();
+	}
+	
+	/**
+	 * gets a connection in a non blocking way. if a connection does not become available in the give time
+	 * the method will throw
+	 * 
+	 * @param timeout the maximum time to wait for a permit
+	 * @param unit the time unit of the timeout argument
+	 * @return
+	 * @throws SQLException
+	 */
+	public Connection getConnection(long timeout, TimeUnit unit) throws SQLException {
+		this.logger.trace("getConnection with timout");
+
+		try {
+			boolean ableToAcquire = this.arrayListSemaphore.tryAcquire(timeout, unit);
+			if(!ableToAcquire) {
+				throw new SQLException("No connections became available");
+			}
+		}
+		catch(InterruptedException ex) {
+			this.logger.error("Exception acquiring the semaphor");
+			throw new SQLException(ex);
+		}
+		
+		Connection con = getAvailableConnection( );
+		return con;
+	}
+	
+	/**
+	 * 
+	 * @return
+	 * @throws SQLException
+	 */
+	private Connection getAvailableConnection() throws SQLException {
+		this.logger.trace("getAvailableConnection");
+		Connection con;
+		
+		try {
+			// this will block waiting for a connection
+			this.arrayListLock.lock( );
+			
+			if(this.availableConnections.size() == 0) {
+				//this should never happen
+				this.logger.fatal("There should always be a connection available here.  A deadlock scenario.");
+			}
+			
+			// there should always be at least 1 available connection at this point.
+			con = moveConnectionToUsedArray();
+		}
+		finally {
+			this.arrayListLock.unlock();
+		}
+
+		return con;
 	}
 
 
