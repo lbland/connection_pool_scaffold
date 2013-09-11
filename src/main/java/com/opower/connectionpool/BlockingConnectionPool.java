@@ -52,7 +52,7 @@ public class BlockingConnectionPool implements ConnectionPool {
 	 * @throws SQLException
 	 */
 	public BlockingConnectionPool(Integer size, ConnectionWrapper connectionWrapper) throws SQLException {
-		this.logger.trace("BlockingConstructor Constructor");
+		logger.trace("BlockingConstructor Constructor");
 		this.poolSize = size;
 		this.connectionWrapper = connectionWrapper;
 		this.availableConnections = new ArrayList<Connection>( );
@@ -73,13 +73,13 @@ public class BlockingConnectionPool implements ConnectionPool {
 	 */
 	@Override
 	public Connection getConnection() throws SQLException {
-		this.logger.trace("getConnection");
+		logger.trace("getConnection");
 		
 		try {
 			this.arrayListSemaphore.acquire();
 		}
 		catch(InterruptedException ex) {
-			this.logger.error("Exception acquiring the semaphor");
+			logger.error("Exception acquiring the semaphor");
 			throw new SQLException(ex);
 		}
 		
@@ -98,7 +98,7 @@ public class BlockingConnectionPool implements ConnectionPool {
 	@Override
 	public void releaseConnection(Connection connection) throws SQLException {
 
-		this.logger.trace("releaseConnection");
+		logger.trace("releaseConnection");
 		
 		if(connection == null) { 
 			throw new SQLException("Cannot release a null connection");
@@ -129,7 +129,7 @@ public class BlockingConnectionPool implements ConnectionPool {
 	 * @throws SQLException
 	 */
 	private void initConnectionPool() throws SQLException {
-		this.logger.trace("initConnectionPool");
+		logger.trace("initConnectionPool");
 		for(Integer counter = 0; counter < this.poolSize; ++counter) {
 			this.availableConnections.add(createConnection());
 
@@ -142,7 +142,7 @@ public class BlockingConnectionPool implements ConnectionPool {
 	 * @throws SQLException
 	 */
 	private Connection createConnection() throws SQLException {
-		this.logger.trace("createConnection");
+		logger.trace("createConnection");
 		return this.connectionWrapper.getConnection();
 	}
 
@@ -156,10 +156,10 @@ public class BlockingConnectionPool implements ConnectionPool {
 	 */
 	private Connection moveConnectionToUsedArray() throws SQLException {
 		
-		this.logger.trace("moveConnectionToUsedArray");
+		logger.trace("moveConnectionToUsedArray");
 		
 		if(this.availableConnections.size() == 0) {
-			this.logger.fatal("There should always be an available connection here.  throwing exception");
+			logger.fatal("There should always be an available connection here.  throwing exception");
 			throw new SQLException("There are no connections in the available connections array.  this should never happen.");
 		}
 			
@@ -183,7 +183,7 @@ public class BlockingConnectionPool implements ConnectionPool {
 	 * @return the number of available connections
 	 */
 	public Integer getAvailableConnections() {
-		this.logger.trace("getAvailableConnections");
+		logger.trace("getAvailableConnections");
 		return this.availableConnections.size();
 	}
 	
@@ -194,7 +194,7 @@ public class BlockingConnectionPool implements ConnectionPool {
 	 * @return the number of used connections
 	 */
 	public Integer getUsedConnections() {
-		this.logger.trace("getAvailableConnections");
+		logger.trace("getAvailableConnections");
 		return this.usedConnections.size();
 	}
 	
@@ -208,7 +208,7 @@ public class BlockingConnectionPool implements ConnectionPool {
 	 * @throws SQLException
 	 */
 	public Connection getConnection(long timeout, TimeUnit unit) throws SQLException {
-		this.logger.trace("getConnection with timout");
+		logger.trace("getConnection with timout");
 
 		try {
 			boolean ableToAcquire = this.arrayListSemaphore.tryAcquire(timeout, unit);
@@ -217,7 +217,7 @@ public class BlockingConnectionPool implements ConnectionPool {
 			}
 		}
 		catch(InterruptedException ex) {
-			this.logger.error("Exception acquiring the semaphor");
+			logger.error("Exception acquiring the semaphor");
 			throw new SQLException(ex);
 		}
 		
@@ -231,7 +231,7 @@ public class BlockingConnectionPool implements ConnectionPool {
 	 * @throws SQLException
 	 */
 	private Connection getAvailableConnection() throws SQLException {
-		this.logger.trace("getAvailableConnection");
+		logger.trace("getAvailableConnection");
 		Connection con;
 		
 		try {
@@ -240,7 +240,7 @@ public class BlockingConnectionPool implements ConnectionPool {
 			
 			if(this.availableConnections.size() == 0) {
 				//this should never happen
-				this.logger.fatal("There should always be a connection available here.  A deadlock scenario.");
+				logger.fatal("There should always be a connection available here.  A deadlock scenario.");
 			}
 			
 			// there should always be at least 1 available connection at this point.
