@@ -225,4 +225,44 @@ public class TestBlockingConnectionPool {
 		
 	}
 	
+	@Test
+	public void testTimeOut() throws SQLException {
+		
+		expect(mockConnectionWrapper.getConnection( )).andReturn(mockConnection);
+		expect(mockConnection.isClosed( )).andReturn(new Boolean(false));
+		
+		replay(mockConnectionWrapper);
+		replay(mockConnection);
+
+		pool = new BlockingConnectionPool(1, mockConnectionWrapper);
+
+		assertEquals(pool.getAvailableConnections( ), new Integer(1));
+
+		Connection connection = pool.getConnection( );
+		assertEquals(pool.getAvailableConnections( ), new Integer(0));
+
+		Thread delayReleaseThread = new Thread(new DelayReleaseConnection(pool, connection));
+		delayReleaseThread.start( );
+
+		try {
+			Connection connection2 = pool.getConnection(100, TimeUnit.MILLISECONDS);
+		}
+		catch(SQLException ex) {
+			assertEquals(ex.getMessage(), "No connections became available");
+			
+		}
+
+		try{
+			// let the other thread finish
+			Thread.sleep(3000);	
+		}
+		catch(InterruptedException ex) {
+			//no op
+		}
+
+		verify(mockConnection);
+		verify(mockConnectionWrapper);	
+	
+	}
+	
 }
