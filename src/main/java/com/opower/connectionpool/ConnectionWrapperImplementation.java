@@ -6,10 +6,9 @@ import javax.sql.DataSource;
 
 public class ConnectionWrapperImplementation implements ConnectionWrapper {
 
-	// private members	
+	// private members
 	private DataSource dataSource;
 
-	
 	public ConnectionWrapperImplementation(DataSource datasource) {
 		this.dataSource = datasource;
 	}
@@ -19,11 +18,11 @@ public class ConnectionWrapperImplementation implements ConnectionWrapper {
 	 * <p>
 	 * 
 	 * 
-	 * @return a connection 
+	 * @return a connection
 	 * @throws SQLException
 	 */
-	public Connection getConnection( ) throws SQLException {
-		return this.dataSource.getConnection();	
+	public Connection getConnection() throws SQLException {
+		return this.dataSource.getConnection();
 	}
-	
+
 }

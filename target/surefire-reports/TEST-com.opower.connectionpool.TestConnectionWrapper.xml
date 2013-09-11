@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuite failures="0" time="0.006" errors="0" skipped="0" tests="1" name="com.opower.connectionpool.TestConnectionWrapper">
+<testsuite failures="0" time="0.068" errors="0" skipped="0" tests="1" name="com.opower.connectionpool.TestConnectionWrapper">
   <properties>
     <property name="java.runtime.name" value="Java(TM) SE Runtime Environment"/>
     <property name="sun.boot.library.path" value="/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Libraries"/>
@@ -22,7 +22,7 @@
     <property name="basedir" value="/Users/loren_bland/Code/connection_pool_scaffold"/>
     <property name="java.endorsed.dirs" value="/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/lib/endorsed"/>
     <property name="os.arch" value="x86_64"/>
-    <property name="surefire.real.class.path" value="/Users/loren_bland/Code/connection_pool_scaffold/target/surefire/surefirebooter5553852054003223115.jar"/>
+    <property name="surefire.real.class.path" value="/Users/loren_bland/Code/connection_pool_scaffold/target/surefire/surefirebooter2698638590102626350.jar"/>
     <property name="java.io.tmpdir" value="/var/folders/tn/50cpggkx4292wm7lyx98lrpw0000gn/T/"/>
     <property name="line.separator" value="
 "/>
@@ -46,7 +46,7 @@
     <property name="java.vm.specification.version" value="1.0"/>
     <property name="sun.arch.data.model" value="64"/>
     <property name="java.home" value="/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home"/>
-    <property name="sun.java.command" value="/Users/loren_bland/Code/connection_pool_scaffold/target/surefire/surefirebooter5553852054003223115.jar /Users/loren_bland/Code/connection_pool_scaffold/target/surefire/surefire1425356406387704072tmp /Users/loren_bland/Code/connection_pool_scaffold/target/surefire/surefire5234850815378580802tmp"/>
+    <property name="sun.java.command" value="/Users/loren_bland/Code/connection_pool_scaffold/target/surefire/surefirebooter2698638590102626350.jar /Users/loren_bland/Code/connection_pool_scaffold/target/surefire/surefire7845775055092970530tmp /Users/loren_bland/Code/connection_pool_scaffold/target/surefire/surefire2550428554789017280tmp"/>
     <property name="java.specification.vendor" value="Sun Microsystems Inc."/>
     <property name="user.language" value="en"/>
     <property name="awt.toolkit" value="apple.awt.CToolkit"/>
@@ -65,5 +65,5 @@
     <property name="ftp.nonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="sun.cpu.isalist" value=""/>
   </properties>
-  <testcase time="0.004" classname="com.opower.connectionpool.TestConnectionWrapper" name="testConnection"/>
+  <testcase time="0.067" classname="com.opower.connectionpool.TestConnectionWrapper" name="testConnection"/>
 </testsuite>

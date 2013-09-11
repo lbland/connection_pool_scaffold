@@ -8,10 +8,11 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.log4j.Logger;
+
 /**
- * This class implements a Blocking Connection Pool.
- * if a request for a connection comes in when there are no available connections, the request will block
- * until there is a connection available.
+ * This class implements a Blocking Connection Pool. if a request for a
+ * connection comes in when there are no available connections, the request will
+ * block until there is a connection available.
  * 
  * @author loren_bland
  * @version 1.0
@@ -22,12 +23,13 @@ public class BlockingConnectionPool implements ConnectionPool {
 	/**
 	 * Private members
 	 */
-	
+
 	// the connectionwrapper abstracts the type of connection the pool is using.
 	private ConnectionWrapper connectionWrapper;
 
 	// queue of available connections and used connections
-	// Used ArrayList because comparing and removing elements is easier than a queue.
+	// Used ArrayList because comparing and removing elements is easier than a
+	// queue.
 	private ArrayList<Connection> availableConnections;
 	private ArrayList<Connection> usedConnections;
 
@@ -36,36 +38,40 @@ public class BlockingConnectionPool implements ConnectionPool {
 
 	// The Semaphore is used to control access to the connection pool
 	// this makes it a blocking call to get a connection
-	private final Semaphore arrayListSemaphore; 
+	private final Semaphore arrayListSemaphore;
 
 	// the size of the pool
 	private Integer poolSize;
-	
+
 	// Logger
-	private static Logger logger = Logger.getLogger(BlockingConnectionPool.class);
-	
+	private static Logger logger = Logger
+			.getLogger(BlockingConnectionPool.class);
+
 	/**
 	 * initialize a blocking connection pool.
 	 * 
-	 * @param size The number of connections in the pool
-	 * @param connectionWrapper A wrapper for the connection type of this pool
+	 * @param size
+	 *            The number of connections in the pool
+	 * @param connectionWrapper
+	 *            A wrapper for the connection type of this pool
 	 * @throws SQLException
 	 */
-	public BlockingConnectionPool(Integer size, ConnectionWrapper connectionWrapper) throws SQLException {
+	public BlockingConnectionPool(Integer size,
+			ConnectionWrapper connectionWrapper) throws SQLException {
 		logger.trace("BlockingConstructor Constructor");
 		this.poolSize = size;
 		this.connectionWrapper = connectionWrapper;
-		this.availableConnections = new ArrayList<Connection>( );
-		this.usedConnections = new ArrayList<Connection>( );
+		this.availableConnections = new ArrayList<Connection>();
+		this.usedConnections = new ArrayList<Connection>();
 		this.arrayListLock = new ReentrantLock();
 		this.arrayListSemaphore = new Semaphore(size, true);
-		
+
 		this.initConnectionPool();
 	}
-	
-	
+
 	/**
-	 * This will return an available connection or block until a connection is available.
+	 * This will return an available connection or block until a connection is
+	 * available.
 	 * <p>
 	 * If a connection is not available, this call will block
 	 * 
@@ -74,22 +80,19 @@ public class BlockingConnectionPool implements ConnectionPool {
 	@Override
 	public Connection getConnection() throws SQLException {
 		logger.trace("getConnection");
-		
+
 		try {
 			this.arrayListSemaphore.acquire();
-		}
-		catch(InterruptedException ex) {
+		} catch (InterruptedException ex) {
 			logger.error("Exception acquiring the semaphor");
 			throw new SQLException(ex);
 		}
-		
-		
-		Connection con = getAvailableConnection( );
+
+		Connection con = getAvailableConnection();
 		return con;
 
 	}
-	
-	
+
 	/**
 	 * adds the connection back to the queue of available connections
 	 * 
@@ -99,8 +102,8 @@ public class BlockingConnectionPool implements ConnectionPool {
 	public void releaseConnection(Connection connection) throws SQLException {
 
 		logger.trace("releaseConnection");
-		
-		if(connection == null) { 
+
+		if (connection == null) {
 			throw new SQLException("Cannot release a null connection");
 		}
 
@@ -108,21 +111,25 @@ public class BlockingConnectionPool implements ConnectionPool {
 			this.arrayListLock.lock();
 
 			// ensure the connection exists in our usedConnections
-			if(!this.usedConnections.remove(connection)) {
-				throw new SQLException("This connection is not part of this ConnectionPool");
+			if (!this.usedConnections.remove(connection)) {
+				throw new SQLException(
+						"This connection is not part of this ConnectionPool");
 			}
 
-			this.availableConnections.add(connection);
+			boolean ableToAdd = this.availableConnections.add(connection);
+			if (!ableToAdd) {
+				throw new SQLException(
+						"Unable to add the connection back onto the available array");
+			}
 
-		}
-		finally {
+		} finally {
 			this.arrayListLock.unlock();
 		}
 
 		this.arrayListSemaphore.release();
-	
+
 	}
-	
+
 	/**
 	 * Initializes the connection pool with the proper number of connections.
 	 * 
@@ -130,8 +137,13 @@ public class BlockingConnectionPool implements ConnectionPool {
 	 */
 	private void initConnectionPool() throws SQLException {
 		logger.trace("initConnectionPool");
-		for(Integer counter = 0; counter < this.poolSize; ++counter) {
-			this.availableConnections.add(createConnection());
+		for (Integer counter = 0; counter < this.poolSize; ++counter) {
+			boolean ableToAdd = this.availableConnections
+					.add(createConnection());
+			if (!ableToAdd) {
+				throw new SQLException(
+						"Unable to add a connection to the available connection array.");
+			}
 
 		}
 	}
@@ -146,33 +158,38 @@ public class BlockingConnectionPool implements ConnectionPool {
 		return this.connectionWrapper.getConnection();
 	}
 
-	
 	/**
-	 * gets a connection off the available connection array and moves it onto the 
-	 * usedConnection array.  the locks is acquired before calling this method and unlocked after.
+	 * gets a connection off the available connection array and moves it onto
+	 * the usedConnection array. the locks is acquired before calling this
+	 * method and unlocked after.
 	 * 
 	 * @return a connection to be used
 	 * @throws SQLException
 	 */
 	private Connection moveConnectionToUsedArray() throws SQLException {
-		
+
 		logger.trace("moveConnectionToUsedArray");
-		
-		if(this.availableConnections.size() == 0) {
+
+		if (this.availableConnections.size() == 0) {
 			logger.fatal("There should always be an available connection here.  throwing exception");
-			throw new SQLException("There are no connections in the available connections array.  this should never happen.");
+			throw new SQLException(
+					"There are no connections in the available connections array.  this should never happen.");
 		}
-			
+
 		// remove the top element and add it to the used connections
 		Connection connection = this.availableConnections.remove(0);
 
-		//if the connection is closed
-		//create a new connection
-		if(connection.isClosed()) {
+		// if the connection is closed
+		// create a new connection
+		if (connection.isClosed()) {
 			connection = createConnection();
 		}
 
-		this.usedConnections.add(connection);
+		boolean ableToAdd = this.usedConnections.add(connection);
+		if (!ableToAdd) {
+			throw new SQLException(
+					"Unable to add the connection back onto the available array");
+		}
 
 		return connection;
 	}
@@ -186,8 +203,7 @@ public class BlockingConnectionPool implements ConnectionPool {
 		logger.trace("getAvailableConnections");
 		return this.availableConnections.size();
 	}
-	
-	
+
 	/**
 	 * gets the number of used connections
 	 * 
@@ -197,34 +213,37 @@ public class BlockingConnectionPool implements ConnectionPool {
 		logger.trace("getAvailableConnections");
 		return this.usedConnections.size();
 	}
-	
+
 	/**
-	 * gets a connection in a non blocking way. if a connection does not become available in the give time
-	 * the method will throw
+	 * gets a connection in a non blocking way. if a connection does not become
+	 * available in the give time the method will throw
 	 * 
-	 * @param timeout the maximum time to wait for a permit
-	 * @param unit the time unit of the timeout argument
+	 * @param timeout
+	 *            the maximum time to wait for a permit
+	 * @param unit
+	 *            the time unit of the timeout argument
 	 * @return a Connection from the DataSource
 	 * @throws SQLException
 	 */
-	public Connection getConnection(long timeout, TimeUnit unit) throws SQLException {
+	public Connection getConnection(long timeout, TimeUnit unit)
+			throws SQLException {
 		logger.trace("getConnection with timout");
 
 		try {
-			boolean ableToAcquire = this.arrayListSemaphore.tryAcquire(timeout, unit);
-			if(!ableToAcquire) {
+			boolean ableToAcquire = this.arrayListSemaphore.tryAcquire(timeout,
+					unit);
+			if (!ableToAcquire) {
 				throw new SQLException("No connections became available");
 			}
-		}
-		catch(InterruptedException ex) {
+		} catch (InterruptedException ex) {
 			logger.error("Exception acquiring the semaphor");
 			throw new SQLException(ex);
 		}
-		
-		Connection con = getAvailableConnection( );
+
+		Connection con = getAvailableConnection();
 		return con;
 	}
-	
+
 	/**
 	 * locks connection array and gets the connection and then unlock
 	 * 
@@ -234,26 +253,24 @@ public class BlockingConnectionPool implements ConnectionPool {
 	private Connection getAvailableConnection() throws SQLException {
 		logger.trace("getAvailableConnection");
 		Connection con;
-		
+
 		try {
 			// this will block waiting for a connection
-			this.arrayListLock.lock( );
-			
-			if(this.availableConnections.size() == 0) {
-				//this should never happen
+			this.arrayListLock.lock();
+
+			if (this.availableConnections.size() == 0) {
+				// this should never happen
 				logger.fatal("There should always be a connection available here.  A deadlock scenario.");
 			}
-			
-			// there should always be at least 1 available connection at this point.
+
+			// there should always be at least 1 available connection at this
+			// point.
 			con = moveConnectionToUsedArray();
-		}
-		finally {
+		} finally {
 			this.arrayListLock.unlock();
 		}
 
 		return con;
 	}
 
-
-	
 }
