@@ -149,7 +149,7 @@ public class BlockingConnectionPool implements ConnectionPool {
 	
 	/**
 	 * gets a connection off the available connection array and moves it onto the 
-	 * usedConnection array.
+	 * usedConnection array.  the locks is acquired before calling this method and unlocked after.
 	 * 
 	 * @return a connection to be used
 	 * @throws SQLException
@@ -204,7 +204,7 @@ public class BlockingConnectionPool implements ConnectionPool {
 	 * 
 	 * @param timeout the maximum time to wait for a permit
 	 * @param unit the time unit of the timeout argument
-	 * @return
+	 * @return a Connection from the DataSource
 	 * @throws SQLException
 	 */
 	public Connection getConnection(long timeout, TimeUnit unit) throws SQLException {
@@ -226,8 +226,9 @@ public class BlockingConnectionPool implements ConnectionPool {
 	}
 	
 	/**
+	 * locks connection array and gets the connection and then unlock
 	 * 
-	 * @return
+	 * @return a Connection from the DataSource
 	 * @throws SQLException
 	 */
 	private Connection getAvailableConnection() throws SQLException {
