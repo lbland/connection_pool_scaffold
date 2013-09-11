@@ -11,7 +11,7 @@ On the creation of the BlockingConnectionPool all connections are created. Conne
 Since this is a ConnectionPool only defines that it will be used for the interface Connection.  This means our connection pool should work for any Connection type.  The ConnectionWrapper class allows any DataSource to be used for this BlockingConnectionPool.  Adding this class also makes UT much easier.
 
 
-## How To Running
+## How To Run
 
 
     mvn compile      # compiles your code in src/main/java
